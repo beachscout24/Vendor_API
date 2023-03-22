@@ -1,9 +1,11 @@
 package io.eric.vendorapi.controller;
 
+import com.mongodb.internal.VisibleForTesting;
 import io.eric.vendorapi.constants.Constants;
 import io.eric.vendorapi.constants.RabbitMQConstants;
 import io.eric.vendorapi.model.Vendor;
 import io.eric.vendorapi.services.IVendorService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -11,6 +13,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -80,6 +83,21 @@ public class VendorController {
 			log.error("Error consuming and saving vendor: {}", exc.getMessage());
 			rabbitTemplate.convertAndSend(directExchange.getName(), RabbitMQConstants.RME_ROUTING_KEY, vendor);
 			log.info("Vendor sent to RME queue {}", vendor);
+		}
+	}
+	
+	@PostMapping()
+	@Hidden
+	@VisibleForTesting(otherwise = VisibleForTesting.AccessModifier.PRIVATE)
+	private ResponseEntity<?> postFakeVendor(@RequestBody Vendor vendor){
+		try{
+			Vendor savedVendor = vendorService.postVendor(vendor);
+			log.info("Message saved");
+			return ResponseEntity.status(201).body(savedVendor);
+		}
+		catch(Exception exc){
+			log.error("Error consuming and saving vendor: {}", exc.getMessage());
+			return ResponseEntity.status(500).body(null);
 		}
 	}
 }
